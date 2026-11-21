@@ -1216,6 +1216,54 @@ addMore("skyborne", {
   { "going upstairs", "flying up to the high perch" },
 })
 
+-- v0.13: from the 2026-11-21 capture
+-- misspellings that should read like the real word, in every voice
+local SAME_AS = { awsome = "awesome", awsum = "awesome", awesom = "awesome", naw = "nah", nahh = "nah" }
+local function copySame(words)
+  for k, real in pairs(SAME_AS) do
+    if words[k] == nil and words[real] ~= nil then words[k] = words[real] end
+  end
+end
+copySame(CORE.words)
+for _, st in pairs(STYLES) do copySame(st.words) end
+
+-- "brb" and friends start a sentence, so they end with a comma:
+-- "brb gotta feed the dogs" -> "Back in a tick, must feed the dogs."
+local LEADS = { "brb", "bbl", "afk", "gtg", "g2g" }
+local function addComma(v)
+  if type(v) == "string" then
+    if v:find("[%w']$") then return v .. "," end
+    return v
+  end
+  local out = {}
+  for i, x in ipairs(v) do out[i] = addComma(x) end
+  return out
+end
+local function commaLeads(words)
+  for _, k in ipairs(LEADS) do
+    if words[k] ~= nil then words[k] = addComma(words[k]) end
+  end
+end
+commaLeads(CORE.words)
+for _, st in pairs(STYLES) do commaLeads(st.words) end
+
+-- "quest" as something you do, not a thing you're given
+local function questVerbs(go)
+  return {
+    { "i quest", "I " .. go }, { "we quest", "we " .. go }, { "you quest", "you " .. go },
+    { "can quest", "can " .. go }, { "lets quest", "let's " .. go }, { "let's quest", "let's " .. go },
+    { "need to quest", "need to " .. go }, { "want to quest", "want to " .. go },
+    { "wanna quest", "want to " .. go }, { "go quest", go }, { "gonna quest", "going " .. go:gsub("^go ", "") },
+    { "going to quest", "going " .. go:gsub("^go ", "") }, { "ill quest", "I'll " .. go },
+    { "i'll quest", "I'll " .. go }, { "will quest", "will " .. go },
+  }
+end
+addMore("gnome", nil, questVerbs("go adventuring"))
+addMore("human", nil, questVerbs("go adventuring"))
+addMore("dwarf", nil, questVerbs("go adventurin'"))
+addMore("nightelf", nil, questVerbs("go wandering"))
+addMore("skyborne", nil, questVerbs("go adventuring"))
+
 local ALIAS = { medieval = "human", knight = "human", nelf = "nightelf", elf = "nightelf",
                 kaldorei = "nightelf", nightelves = "nightelf", dwarves = "dwarf", gnomes = "gnome",
                 humans = "human", sky = "skyborne" }
@@ -1614,6 +1662,8 @@ function R.Transform(text, db, chatType)
   text = text:gsub("%f[%w']i%f[^%w']", "I")
   -- restore links and phrases
   text = text:gsub("\001(%d+)\002", function(n) return saved[tonumber(n)] end)
+  -- a line that ends on "brb," loses the comma
+  text = text:gsub(",+%s*$", "")
 
   -- emotes read "Name waves.", so their first letter stays lower case
   if db.capitalize and chatType ~= "EMOTE" then
