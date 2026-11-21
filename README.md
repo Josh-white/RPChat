@@ -16,7 +16,7 @@ Item links, raid markers like `{star}` and web links are never changed.
 
 ## Install
 
-1. Download **RPChat.zip** from the [latest release](../../releases/latest).
+1. Download **[RPChat.zip](https://github.com/Josh-white/RPChat/raw/main/RPChat.zip)**.
 2. Close the game.
 3. Unzip it. You get a folder called `RPChat`.
 4. Copy that `RPChat` folder into
@@ -30,7 +30,7 @@ If the game is already running, `/reload` after copying the folder works too.
 
 ## Updating
 
-Download the newest RPChat.zip from [Releases](../../releases), close the game, and copy the new `RPChat` folder over the old one. Keep your own `CustomWords.lua` if you've edited it (copy everything else, or put your file back afterwards). Your settings are kept.
+Download the newest [RPChat.zip](https://github.com/Josh-white/RPChat/raw/main/RPChat.zip) the same way, close the game, and copy the new `RPChat` folder over the old one. Keep your own `CustomWords.lua` if you've edited it (copy everything else, or put your file back afterwards). Your settings are kept.
 
 ## Commands
 
