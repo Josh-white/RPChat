@@ -1,0 +1,10 @@
+## Interface: 16001
+## Title: RPChat
+## Notes: Turns your typed chat into role-play speech. Type /rp for options.
+## Author: JJ
+## Version: 0.12.0
+## SavedVariables: RPChatDB, RPChatLog
+## SavedVariablesPerCharacter: RPChatCharDB
+
+CustomWords.lua
+RPChat.lua
