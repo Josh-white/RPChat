@@ -1604,9 +1604,12 @@ end
 -- Item links, colour codes and icons must reach the server byte-for-byte,
 -- so they are swapped out for placeholders while words are rewritten.
 local PROTECT = {
-  "|c%x%x%x%x%x%x%x%x.-|r",   -- coloured text / item links
+  "|c.-|r",                   -- coloured text / item links (|cffRRGGBB and the new |cnIQ4: style)
   "|H.-|h.-|h",               -- bare hyperlinks
   "|T.-|t",                   -- textures
+  "|A.-|a",                   -- atlas icons (e.g. crafting quality)
+  "|K.-|k",                   -- Battle.net names
+  "|%a",                      -- any other escape code left on its own
   "{[^}]+}",                  -- raid markers like {star}
   "https?://%S+",             -- web links
 }
@@ -1671,7 +1674,7 @@ function R.Transform(text, db, chatType)
     text = text:gsub("([%.!%?]%s+)(%l)", function(a, b) return a .. b:upper() end)
   end
   if db.punctuate and text:find("%a") and not text:find("[%.!%?%*%)\"']$")
-     and not text:find("|[rht]$") then
+     and not text:find("|[rhtak]$") then
     text = text .. (chatType == "YELL" and "!" or ".")
   end
   return text
