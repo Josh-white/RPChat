@@ -1264,6 +1264,13 @@ addMore("dwarf", nil, questVerbs("go adventurin'"))
 addMore("nightelf", nil, questVerbs("go wandering"))
 addMore("skyborne", nil, questVerbs("go adventuring"))
 
+-- v0.15: from the 2026-11-21 late capture
+addMore("gnome", { hopefully = "with any luck" }, { { "i have no idea", "I haven't the foggiest" }, { "i got no idea", "I haven't the foggiest" } })
+addMore("human", { hopefully = "God willing" }, { { "i have no idea", "I know not" } })
+addMore("dwarf", { hopefully = "wi' any luck" }, { { "i have no idea", "I've nae idea" } })
+addMore("nightelf", { hopefully = "Elune willing" }, { { "i have no idea", "that knowledge eludes me" } })
+addMore("skyborne", { hopefully = "winds willing" }, { { "i have no idea", "the winds haven't told me" } })
+
 local ALIAS = { medieval = "human", knight = "human", nelf = "nightelf", elf = "nightelf",
                 kaldorei = "nightelf", nightelves = "nightelf", dwarves = "dwarf", gnomes = "gnome",
                 humans = "human", sky = "skyborne" }
@@ -1614,6 +1621,12 @@ local PROTECT = {
   "https?://%S+",             -- web links
 }
 
+-- v0.15: answers that only make sense at the start of a sentence
+-- ("no" in "they were no help" stays "no"), and openers that take a comma.
+local START_ONLY = { no = true, nope = true, nah = true, naw = true, nahh = true,
+  k = true, kk = true, ok = true, okay = true, alright = true, aight = true }
+local OPENERS = { sry = true, srry = true, soz = true }
+
 function R.Transform(text, db, chatType)
   db = db or RPChatDB
   local saved = {}
@@ -1653,10 +1666,23 @@ function R.Transform(text, db, chatType)
   end
 
   -- single words
-  text = text:gsub("%f[%w']([%w']+)%f[^%w']", function(word)
+  text = text:gsub("()%f[%w']([%w']+)%f[^%w']()", function(pos, word, after)
     local key = word:lower()
+    local first = START_ONLY[key] or OPENERS[key]
+    local atStart, more
+    if first then
+      local before = text:sub(1, pos - 1)
+      atStart = before:find("^%s*$") or before:find("[%.!%?,;:]%s*$")
+      more = text:sub(after):find("^%s*[%w\001]")
+      -- "they were no help" keeps its "no"; "no, thanks" and a lone "no" still change
+      if START_ONLY[key] and not atStart and (more or before:find("%w")) then return nil end
+    end
     local rep = pick(key, lookup(db, key))
-    if rep then return matchCase(word, rep) end
+    if not rep then return nil end
+    rep = matchCase(word, rep)
+    -- "sry tank is drinking" -> "Terribly sorry, bulwark is recharging", "nope not today" -> "Negative, not today"
+    if first and atStart and more and rep:find("[%w']$") then rep = rep .. "," end
+    return rep
   end)
 
   -- tidy up
