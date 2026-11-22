@@ -1321,6 +1321,30 @@ SAME_AS.upstiars = "upstairs"; SAME_AS.upstars = "upstairs"; SAME_AS.downstiars 
 copySame(CORE.words)
 for _, st in pairs(STYLES) do copySame(st.words) end
 
+-- v0.19: from a friend's human paladin capture
+for k, v in pairs({ beleive = "believe", belive = "believe", firends = "friends", freinds = "friends",
+  ["letr's"] = "let's" }) do
+  if CORE.words[k] == nil then CORE.words[k] = v end
+end
+SAME_AS.firends = "friends"; SAME_AS.freinds = "friends"; SAME_AS.frend = "friend"
+SAME_AS.beleive = "believe"; SAME_AS.belive = "believe"
+copySame(CORE.words)
+for _, st in pairs(STYLES) do copySame(st.words) end
+local CIAO = { human = "farewell", gnome = "toodle-oo", dwarf = "cheerio", nightelf = "farewell",
+  skyborne = "fly safe" }
+local NICE_WORK = { human = "fine work", gnome = "splendid work", dwarf = "braw work",
+  nightelf = "well done", skyborne = "lovely work" }
+for name, w in pairs(NICE_WORK) do
+  setPhrases(name, { { "nice work", w }, { "nice job", w } })
+end
+for name, bye in pairs(CIAO) do
+  addMore(name, { ciao = bye }, nil)
+  setPhrases(name, { { "here here", "hear, hear" }, { "what up", (function()
+    for _, p in ipairs(STYLES[name].phrases) do if p[1] == "whats up" then return p[2] end end
+    return "what news"
+  end)() }, { "got cha", "understood" } })
+end
+
 local ALIAS = { medieval = "human", knight = "human", nelf = "nightelf", elf = "nightelf",
                 kaldorei = "nightelf", nightelves = "nightelf", dwarves = "dwarf", gnomes = "gnome",
                 humans = "human", sky = "skyborne" }
@@ -1675,6 +1699,12 @@ local PROTECT = {
 -- ("no" in "they were no help" stays "no"), and openers that take a comma.
 local START_ONLY = { no = true, nope = true, nah = true, naw = true, nahh = true,
   k = true, kk = true, ok = true, okay = true, alright = true, aight = true }
+-- v0.19: "nice" before a noun is an adjective, not an exclamation
+local NICE_ADJ = { nice = true }
+local NICE_ADJ_BY_STYLE = { human = "fine", gnome = "splendid", dwarf = "braw", nightelf = "graceful",
+  skyborne = "lovely" }
+local NOT_NOUN = { to = true, as = true, of = true, but = true, ["if"] = true,
+  when = true, now = true, though = true, too = true, guys = true, everyone = true, all = true, man = true }
 local OPENERS = { sry = true, srry = true, soz = true, sorry = true }
 -- a line that starts with one of these is a question, even without the "?"
 local QUESTION = { how = true, what = true, where = true, why = true, who = true, whos = true,
@@ -1684,6 +1714,7 @@ local QUESTION = { how = true, what = true, where = true, why = true, who = true
 function R.Transform(text, db, chatType)
   db = db or RPChatDB
   local opening = (text:match("^%s*([%a']+)") or ""):lower()
+  local saidWhatA = text:lower():find("^%s*what%s+an?%s") ~= nil   -- "what a fight" is no question
   local saved = {}
   local function stash(chunk)
     saved[#saved + 1] = chunk
@@ -1732,7 +1763,16 @@ function R.Transform(text, db, chatType)
       -- "they were no help" keeps its "no"; "no, thanks" and a lone "no" still change
       if START_ONLY[key] and not atStart and (more or before:find("%w")) then return nil end
     end
-    local rep = pick(key, lookup(db, key))
+    local rep
+    if NICE_ADJ[key] and db.custom[key] == nil and fileWords[key] == nil and not db.removed[key] then
+      -- "nice recovery" -> "fine recovery"; a lone "nice" stays an exclamation
+      local nextWord = text:sub(after):match("^%s+([%w']+)")
+      if nextWord and not NOT_NOUN[nextWord:lower()] then
+        local st = STYLES[db.style] or STYLES.gnome
+        rep = NICE_ADJ_BY_STYLE[db.style] or NICE_ADJ_BY_STYLE[st.base or ""] or "fine"
+      end
+    end
+    rep = rep or pick(key, lookup(db, key))
     if not rep then return nil end
     rep = matchCase(word, rep)
     -- "sry tank is drinking" -> "Terribly sorry, bulwark is recharging", "nope not today" -> "Negative, not today"
@@ -1758,7 +1798,9 @@ function R.Transform(text, db, chatType)
   end
   if db.punctuate and text:find("%a") and not text:find("[%.!%?%*%)\"']$")
      and not text:find("|[rhtak]$") then
-    if QUESTION[opening] then text = text .. "?"
+    local exclaim = opening == "what" and saidWhatA
+    if exclaim then text = text .. "!"
+    elseif QUESTION[opening] then text = text .. "?"
     else text = text .. (chatType == "YELL" and "!" or ".") end
   end
   return text
@@ -1771,12 +1813,21 @@ local MAXLEN = 255
 local busy = false   -- stops a line being rewritten twice
 
 -- Returns the text and chat type that should really be sent.
+-- Lines other add-ons send for you, like "{rt1} Questie: 5/5 ..." or "[DBM] Pull in 5",
+-- are left exactly as they are and aren't captured.
+local function fromAddon(msg)
+  return msg:find("^%s*{[^}]+}%s*[%w%-_ ]+:") or msg:find("^%s*%[[%w%-_ ]+%]")
+    or msg:find("^%s*<[%w%-_ ]+>") or msg:find("^%s*[%w%-_]+:%s*%d+/%d+")
+end
+R.FromAddon = fromAddon
+
 local function rewrite(msg, chatType)
   local db = RPChatDB
   R.lastError = nil
   if busy or not db or not db.enabled or type(msg) ~= "string" or msg == "" then
     return msg, chatType
   end
+  if fromAddon(msg) then return msg, chatType end
   local ct = type(chatType) == "string" and chatType:upper() or "SAY"
   local bp = db.bypass
   if bp and bp ~= "" and msg:sub(1, #bp) == bp then
@@ -1808,6 +1859,7 @@ end
 local function capture(typed, sent, chatType)
   local db = RPChatDB
   if not db or not db.capture or type(typed) ~= "string" or typed == "" then return end
+  if fromAddon(typed) then return end
   local ct = type(chatType) == "string" and chatType:upper() or "SAY"
   if not CAPTURE[ct] then return end
   local bp = db.bypass
