@@ -2453,5 +2453,14 @@ frame:SetScript("OnEvent", function(self, event, name)
   say("loaded. RP speech is " .. onoff(RPChatDB.enabled) .. ", " .. n ..
       " swaps from CustomWords.lua. Type /rp help.")
   say("Voice: " .. R.StyleSource() .. ".")
+  -- v0.17: say so when a new version was installed since last time
+  local meta = (C_AddOns and C_AddOns.GetAddOnMetadata) or GetAddOnMetadata
+  local ver = meta and meta(ADDON, "Version")
+  if ver then
+    if RPChatDB.lastVersion and RPChatDB.lastVersion ~= ver then
+      say("|cff40ff40Updated to " .. ver .. "|r (was " .. tostring(RPChatDB.lastVersion) .. ").")
+    end
+    RPChatDB.lastVersion = ver
+  end
   self:UnregisterEvent("ADDON_LOADED")
 end)
