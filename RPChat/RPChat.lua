@@ -1699,6 +1699,10 @@ local PROTECT = {
 -- ("no" in "they were no help" stays "no"), and openers that take a comma.
 local START_ONLY = { no = true, nope = true, nah = true, naw = true, nahh = true,
   k = true, kk = true, ok = true, okay = true, alright = true, aight = true }
+-- v0.20: short forms that are also ordinary words
+local PLACE_ONLY = { ah = true }
+local PLACE_BEFORE = { the = true, to = true, at = true, on = true, ["in"] = true, from = true,
+  by = true, via = true, near = true, outside = true, inside = true }
 -- v0.19: "nice" before a noun is an adjective, not an exclamation
 local NICE_ADJ = { nice = true }
 local NICE_ADJ_BY_STYLE = { human = "fine", gnome = "splendid", dwarf = "braw", nightelf = "graceful",
@@ -1763,6 +1767,11 @@ function R.Transform(text, db, chatType)
       -- "they were no help" keeps its "no"; "no, thanks" and a lone "no" still change
       if START_ONLY[key] and not atStart and (more or before:find("%w")) then return nil end
     end
+    -- "ah, you did it" stays "Ah"; "AH" or "the ah" is the auction house
+    if PLACE_ONLY[key] and word ~= word:upper() then
+      local prev = text:sub(1, pos - 1):match("([%a']+)%s*$")
+      if not (prev and PLACE_BEFORE[prev:lower()]) then return nil end
+    end
     local rep
     if NICE_ADJ[key] and db.custom[key] == nil and fileWords[key] == nil and not db.removed[key] then
       -- "nice recovery" -> "fine recovery"; a lone "nice" stays an exclamation
@@ -1774,7 +1783,12 @@ function R.Transform(text, db, chatType)
     end
     rep = rep or pick(key, lookup(db, key))
     if not rep then return nil end
-    rep = matchCase(word, rep)
+    if PLACE_ONLY[key] and word == word:upper() then
+      -- "AH" is an abbreviation, not shouting: "Auction House"
+      rep = rep:gsub("(%a)(%a*)", function(a, b) return a:upper() .. b end)
+    else
+      rep = matchCase(word, rep)
+    end
     -- "sry tank is drinking" -> "Terribly sorry, bulwark is recharging", "nope not today" -> "Negative, not today"
     if first and atStart and more and rep:find("[%w']$") then rep = rep .. "," end
     return rep
