@@ -1928,6 +1928,136 @@ local BANTER = {
   },
 }
 
+-- v0.16: themed banter. /rp camp uses BANTER above (plus class lines),
+-- /rp silly and /rp party use these.
+local SILLY = {
+  gnome = {
+    "I've invented a device that detects danger. It's been beeping since we left town.",
+    "Why did the gnome cross the road? To recalibrate the road.",
+    "My hat has a hat. For emergencies.",
+    "Someone stole my step stool. I'm going to have to look into it. From down here.",
+    "I tried to build a perpetual motion machine. It's been perpetually broken.",
+    "*accidentally sets off a tiny firework from a coat pocket*",
+    "If I stand on your shoulders, I'm technically the tallest one here.",
+    "I put a cog in my soup for extra iron. Do not recommend.",
+    "My last invention was so advanced it went back in time and uninvented itself.",
+    "Pop quiz! How many gnomes does it take to fix a lamp? Trick question. We'd build a sun.",
+    "*sneezes, and something mechanical inside the backpack starts whirring*",
+    "Why yes, these are my second-best goggles. The best ones are on my other face.",
+  },
+  human = {
+    "I once fought a kobold over a candle. The candle won.",
+    "My horse is smarter than me. She just lets me think otherwise.",
+    "Is it brave to charge in first, or just poor planning? Asking for myself.",
+    "*trips over a perfectly flat patch of ground and pretends it was a lunge*",
+    "My mother said I'd never amount to anything. Now I'm unemployed in five different zones.",
+    "Who keeps putting wolves in the forest? Honestly, every single time.",
+    "I'd tell you a joke about Westfall, but it's still being harvested.",
+    "My armor squeaks. I've decided it's a battle cry.",
+    "I have a strict rule: never trust a murloc who says 'mrrgl' twice.",
+    "*attempts a heroic pose, and the cape gets caught on a branch*",
+  },
+  dwarf = {
+    "Me beard's got a beard. Third generation, that one.",
+    "I tried bein' sober once. Worst four minutes o' me life.",
+    "Did ye hear about the dwarf who fell in the ale vat? Took him three days tae drown. He kept gettin' out tae use the privy.",
+    "*hiccups loudly and looks around for whoever did that*",
+    "Some say I'm short. I say the rest o' ye are needlessly tall.",
+    "I named me axe Gertrude. She's the only lass who's never left me.",
+    "If it moves, I hit it. If it doesnae move, I hit it until it does.",
+    "Ach, I left me hammer in the last tavern. Or the one before. Or the barmaid has it.",
+    "Mountains are just hills that got proper ambitious.",
+    "*attempts tae juggle three mugs and catches only the full one*",
+  },
+  nightelf = {
+    "I have been alive for ten thousand years and I still cannot whistle.",
+    "Do not mind me. I am simply brooding majestically.",
+    "*glows faintly, then seems embarrassed about it*",
+    "The trees told me a secret. It was mostly about squirrels.",
+    "I once waited a century for a kettle to boil. It was worth it.",
+    "Elune watches over us. She is probably laughing at you specifically.",
+    "Short-lived races are always in such a hurry. It is adorable.",
+    "My hair is not purple. It is 'twilight violet'. There is a difference.",
+    "*does a flawless backflip for no reason whatsoever*",
+    "Yes, my ears can hear that. Yes, all of it. Please stop.",
+  },
+  skyborne = {
+    "Has anyone seen my other feather? It was right here. On my body.",
+    "Walking is just very slow, very boring falling.",
+    "I tried to hold a cup with my wings once. Do not ask about the tavern.",
+    "*preens a ruffled wing, sneezes, and loses three feathers*",
+    "Humans ask if I can fly. I ask if they can stop asking.",
+    "Some birds sing at dawn. I prefer to sing at you.",
+    "I'm not lost. I'm simply exploring the wrong direction with great confidence.",
+    "Never challenge a Skyborne to a staring contest. We have spare eyelids.",
+    "*hops onto a crate to be taller, then looks very pleased about it*",
+    "If anyone needs me, I'll be on top of the nearest roof. As usual.",
+  },
+}
+
+local PARTYTALK = {
+  gnome = {
+    "Right then, team! Tanks to the front, squishies to the back, gnomes wherever the loot is.",
+    "Quick reminder: if I start glowing, that's normal. Mostly.",
+    "Who's pulling? Not me. My arms are too short to reach that far.",
+    "Excellent teamwork, chums! I've only been knocked over twice.",
+    "Everyone ready? Goggles on, gears greased, snacks distributed?",
+    "Let's do this efficiently. I've drawn a diagram. It's mostly arrows.",
+    "If I go down, avenge me. If I get back up, pretend it was planned.",
+    "*hands out tiny cogs to the group as good-luck charms*",
+    "Splendid group, this. Nobody's stepped on me yet.",
+    "Healer, I'll try not to need you. I'll fail, but I'll try.",
+  },
+  human = {
+    "Form up, friends! We go in together and we come out together.",
+    "Shields up, blades out, and someone please watch my back.",
+    "A fine company, this. I'd follow any of you into the Deadmines.",
+    "Steady now. We take them one pack at a time.",
+    "Well fought, all! The Light smiles on this group tonight.",
+    "Everyone have water? Food? A clear head? Two out of three will do.",
+    "If we wipe, we regroup. No shame in it, only lessons.",
+    "*raises a sword in salute to the group*",
+    "Healer, my thanks in advance. I suspect I'll need it.",
+    "Onward! Glory awaits, and possibly a decent pair of boots.",
+  },
+  dwarf = {
+    "Right, lads and lasses! Let's go break some heads an' take their shinies!",
+    "Stick close an' keep yer shields up. Nae heroics till I say so.",
+    "That's the spirit! Fight like ye've got a keg waitin' at the end!",
+    "Tank's in front, I'm right behind, an' the ale's on whoever dies first.",
+    "Och, grand fightin' there. Me grandda would've wept wi' pride.",
+    "Everyone mended up? Good. Let's go find somethin' that needs hittin'.",
+    "If we fall, we fall together. Then we get up an' do it again.",
+    "*bangs a hammer on a shield tae rally the group*",
+    "Healer, keep me alive an' I'll buy the first round. Maybe the second.",
+    "Nae rest for the bearded! Onward!",
+  },
+  nightelf = {
+    "Move as one, friends. The forest rewards patience and punishes haste.",
+    "Elune guide our blades and guard our healer.",
+    "Well done. Your ancestors would be proud, briefly, before they forgot.",
+    "Step lightly. The shadows here are listening.",
+    "We are a fine company. I have seen worse in ten thousand years. Not many.",
+    "Breathe, regroup, and let the moonlight mend you.",
+    "Stay together. Alone, we are prey. Together, we are the hunt.",
+    "*bows gracefully to the group before the next pull*",
+    "Healer, you have my gratitude, now and for the next few centuries.",
+    "Onward, beneath the stars.",
+  },
+  skyborne = {
+    "Wings together, everyone! Well, arms. Whatever you've got.",
+    "I'll scout ahead. From above. Where it's safe. For me.",
+    "Fine flying, all! Erm, fine walking. You know what I mean.",
+    "Stay close. If you get lost, look up. I'll be the one circling.",
+    "Good fight! My feathers are only slightly singed.",
+    "Ready when you are. The wind is in our favor today.",
+    "If anyone falls, I'll swoop in. Metaphorically. I can't carry you.",
+    "*fluffs up feathers and nods to each member of the group*",
+    "Healer, thank you. My plumage owes you its life.",
+    "Onward and upward! Mostly onward. Upward is just me.",
+  },
+}
+
 local lastBanter = {}
 local BANTER_CHAN = { s = "SAY", say = "SAY", p = "PARTY", party = "PARTY", y = "YELL", yell = "YELL",
   i = "INSTANCE_CHAT", instance = "INSTANCE_CHAT", g = "GUILD", guild = "GUILD", r = "RAID", raid = "RAID",
@@ -1943,14 +2073,26 @@ local function classBanter(style)
   return #pool > 0 and pool or nil
 end
 
--- Picks a line from the voice's pool, avoiding the last few used.
--- About a third of the time it is a line for your class instead;
--- onlyClass forces one.
-function R.Banter(style, onlyClass)
-  local pool = BANTER[style] or BANTER[(STYLES[style] and STYLES[style].base) or "human"] or BANTER.human
+local THEMES = { camp = BANTER, silly = SILLY, party = PARTYTALK }
+local function themePool(set, style)
+  return set[style] or set[(STYLES[style] and STYLES[style].base) or "human"] or set.human
+end
+
+-- Picks a line from a theme ("camp", "silly", "party", or nil for any),
+-- avoiding the last few used. Camp lines are about a third class lines;
+-- theme "class" forces one.
+function R.Banter(style, theme)
+  if theme == true then theme = "class" end
+  if not theme then
+    local names = { "camp", "silly", "party" }
+    theme = names[math.random(#names)]
+  end
+  local pool = themePool(THEMES[theme] or BANTER, style)
   local cpool = classBanter(style)
-  local key = style
-  if cpool and (onlyClass or math.random(100) <= 35) then pool, key = cpool, style .. ":class" end
+  local key = style .. ":" .. theme
+  if cpool and (theme == "class" or (theme == "camp" and math.random(100) <= 35)) then
+    pool, key = cpool, style .. ":class"
+  end
   local recent = lastBanter[key] or {}
   local line, tries = nil, 0
   repeat
@@ -1980,8 +2122,10 @@ local HELP = {
   "/rp test <text>  - preview without sending",
   "/rp caps | punct | stars  - toggle capitals, full stops, *emote* lines",
   "/rp flair [0-100]  - toggle the occasional *emote*, or set how often (percent)",
-  "/rp banter [say|party|yell|instance]  - say a random in-character line (campfires, idle moments)",
-  "/rp banter class [say|party|...]  - a line for your class only",
+  "/rp camp | silly | party  - say a random in-character line: campfire talk, a joke, or group talk",
+  "    add a channel to send it elsewhere: /rp silly party, /rp camp yell (party talk goes to your group)",
+  "/rp banter [class]  - a line from any theme, or one for your class",
+  "/rp share  - show your recent typed and sent lines, ready to copy and send to someone",
   "/rp capture [on|off|clear]  - log your say/yell/party lines so the word list can be tuned",
   "/rp reset  - restore all defaults",
 }
@@ -2023,7 +2167,7 @@ end
 
 -- A small window holding the export text, selected and ready for Ctrl+C.
 local exportFrame
-function R.ShowExport(text)
+function R.ShowExport(text, heading)
   if not exportFrame then
     local f = CreateFrame("Frame", "RPChatExportFrame", UIParent, "BackdropTemplate")
     f:SetSize(520, 360)
@@ -2044,7 +2188,7 @@ function R.ShowExport(text)
     end
     local title = f:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     title:SetPoint("TOP", 0, -16)
-    title:SetText("RPChat export: press Ctrl+C, then paste over CustomWords.lua")
+    f.title = title
 
     local scroll = CreateFrame("ScrollFrame", "RPChatExportScroll", f, "UIPanelScrollFrameTemplate")
     scroll:SetPoint("TOPLEFT", 20, -40)
@@ -2066,10 +2210,31 @@ function R.ShowExport(text)
     close:SetScript("OnClick", function() f:Hide() end)
     exportFrame = f
   end
+  exportFrame.title:SetText(heading or "RPChat export: press Ctrl+C, then paste over CustomWords.lua")
   exportFrame.edit:SetText(text)
   exportFrame:Show()
   exportFrame.edit:SetFocus()
   exportFrame.edit:HighlightText()
+end
+
+-- Recent capture lines as plain text, for sharing.
+function R.ShareText(max)
+  local lines = type(RPChatLog) == "table" and RPChatLog.lines or {}
+  local meta = (C_AddOns and C_AddOns.GetAddOnMetadata) or GetAddOnMetadata
+  local ver = meta and meta(ADDON, "Version") or "?"
+  local out = { "RPChat " .. tostring(ver) .. " capture, " .. #lines .. " lines saved. Newest last.", "" }
+  local first = math.max(1, #lines - (max or 300) + 1)
+  for i = first, #lines do
+    local e = lines[i]
+    if type(e) == "table" then
+      local when = (date and e.t) and date("%Y-%m-%d %H:%M", e.t) or tostring(e.t or "")
+      local extra = (e.off and " (rp off)" or "") .. (e.err and (" (error: " .. tostring(e.err) .. ")") or "")
+      out[#out + 1] = string.format("%s %s %s | %s => %s%s", when, tostring(e.c or ""):lower(),
+        tostring(e.v or ""), tostring(e.o or ""), tostring(e.s or ""), extra)
+    end
+  end
+  if #lines == 0 then out[#out + 1] = "(nothing captured yet: chat a bit with /rp capture on)" end
+  return table.concat(out, "\n")
 end
 
 local function slash(input)
@@ -2123,6 +2288,8 @@ local function slash(input)
     if n == 0 then say("No custom words yet. Add one with /rp add or in CustomWords.lua.") end
   elseif cmd == "export" then
     R.ShowExport(R.ExportText(db))
+  elseif cmd == "share" then
+    R.ShowExport(R.ShareText(300), "RPChat capture: press Ctrl+C, then paste it in a message")
   elseif cmd == "test" then
     say("|cffaaaaaa" .. rest .. "|r")
     say(R.Transform(rest, db))
@@ -2163,15 +2330,26 @@ local function slash(input)
   elseif cmd == "stars" then
     db.asteriskEmotes = not db.asteriskEmotes
     say("*Emote* lines are " .. onoff(db.asteriskEmotes) .. ".")
-  elseif cmd == "banter" or cmd == "chatter" then
+  elseif cmd == "banter" or cmd == "chatter" or cmd == "camp" or cmd == "silly" or cmd == "party" then
     local a = rest:lower()
-    local onlyClass = false
+    local theme = (cmd == "camp" or cmd == "silly" or cmd == "party") and cmd or nil
     local w1, w2 = a:match("^(%S+)%s*(.*)$")
-    if w1 == "class" then onlyClass, a = true, w2 or "" end
-    if onlyClass and not classData() then say("No class lines yet. Your class isn't known until you're logged in.") return end
-    local ct = BANTER_CHAN[a] or "SAY"
+    if w1 == "class" or (THEMES[w1 or ""] and not theme) then theme, a = w1, w2 or "" end
+    if theme == "class" and not classData() then say("No class lines yet. Your class isn't known until you're logged in.") return end
+    -- party talk goes to your group by default; the rest to /say
+    local ct = BANTER_CHAN[a]
+    if not ct then
+      if theme == "party" then
+        if IsInGroup and LE_PARTY_CATEGORY_INSTANCE and IsInGroup(LE_PARTY_CATEGORY_INSTANCE) then ct = "INSTANCE_CHAT"
+        elseif IsInRaid and IsInRaid() then ct = "RAID"
+        elseif IsInGroup and IsInGroup() then ct = "PARTY"
+        else ct = "SAY" end
+      else
+        ct = "SAY"
+      end
+    end
     if a ~= "" and not BANTER_CHAN[a] then say("Unknown channel '" .. a .. "'. Try say, party, yell or instance.") return end
-    local line = R.Banter(db.style, onlyClass)
+    local line = R.Banter(db.style, theme)
     local emote = line:match("^%*(.+)%*$")
     if emote and (ct == "SAY" or ct == "EMOTE") then line, ct = emote, "EMOTE"
     elseif ct == "EMOTE" then ct = "SAY" end

@@ -38,7 +38,8 @@ Download the newest [RPChat.zip](https://github.com/Josh-white/RPChat/raw/main/R
 - `/rp test <text>` previews a line without sending it.
 - `/rp style` lists the voices. `/rp style dwarf` (or human, nightelf, gnome, skyborne) uses that voice on this character. `/rp style auto` goes back to your race's voice.
 - `/rp channel <name>` toggles a channel: say, yell, emote, party, instance, raid, guild, officer, whisper or channel. Say, yell, party and instance are on at first.
-- `/rp banter` says a random in-character line, good for campfires and idle moments. About a third are for your class. `/rp banter class` always picks a class line. Add `party`, `yell` or `instance` to say it there (`/rp banter party`). Tip: put `/rp banter` in a macro.
+- `/rp camp`, `/rp silly` and `/rp party` say a random in-character line in your voice: campfire talk, a joke, or group talk. Party talk goes to your group automatically (party, raid or dungeon chat); the others go to /say. Add a channel to send one elsewhere, like `/rp silly party` or `/rp camp yell`. Camp lines are sometimes about your class. Tip: put them in macros on your bar.
+- `/rp banter` picks from any of the three, and `/rp banter class` always gives a line for your class.
 - `/rp add hi = well met, friend` adds your own swap for a word or phrase.
 - `/rp remove <word>` stops changing a built-in word.
 - `/rp list` shows your own swaps. `/rp export` gives them to you in `CustomWords.lua` format to copy.
@@ -57,9 +58,11 @@ Swaps you add with `/rp add` are saved with your game settings. To keep them in 
 
 You can also edit that file by hand; the instructions are at the top of it. If a word is in both places, the one added in game wins.
 
-## Chat capture
+## Chat capture and sharing
 
-RPChat keeps a log of your own say, yell, party and instance lines (what you typed and what was sent) in your own `WTF\...\SavedVariables\RPChat.lua`, newest 2,000 lines. It's there to help tune the word list. It never leaves your computer, nothing other people say is recorded, and lines starting with `~` are skipped. Turn it off with `/rp capture off`, or empty it with `/rp capture clear`.
+RPChat keeps a log of your own say, yell, party and instance lines (what you typed and what was sent) in your own `WTF\...\SavedVariables\RPChat.lua`, newest 2,000 lines. It's there to help tune the word list. It never leaves your computer unless you send it, nothing other people say is recorded, and lines starting with `~` are skipped. Turn it off with `/rp capture off`, or empty it with `/rp capture clear`.
+
+To share it, type `/rp share`. A window opens with your recent lines already selected. Press **Ctrl+C** and paste it into a Discord message or a text file. You can also send the whole file: `World of Warcraft\_forever_\WTF\Account\<your account>\SavedVariables\RPChat.lua` (quit the game first so it's up to date).
 
 ## Good to know
 
