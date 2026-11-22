@@ -1271,6 +1271,56 @@ addMore("dwarf", { hopefully = "wi' any luck" }, { { "i have no idea", "I've nae
 addMore("nightelf", { hopefully = "Elune willing" }, { { "i have no idea", "that knowledge eludes me" } })
 addMore("skyborne", { hopefully = "winds willing" }, { { "i have no idea", "the winds haven't told me" } })
 
+-- v0.18: from the 2026-11-22 desktop capture. setPhrase replaces a phrase
+-- a voice already has (addMore only adds new ones).
+local function setPhrase(name, from, to)
+  local st = STYLES[name]
+  if not st then return end
+  for _, p in ipairs(st.phrases) do
+    if p[1] == from then p[2] = to return end
+  end
+  st.phrases[#st.phrases + 1] = { from, to }
+end
+local function setPhrases(name, list)
+  for _, p in ipairs(list) do setPhrase(name, p[1], p[2]) end
+end
+-- "good luck" mid-sentence ("good luck on your adventures") is good fortune
+for _, name in ipairs({ "gnome", "human", "dwarf", "nightelf", "skyborne" }) do
+  setPhrases(name, {
+    { "good luck on", "good fortune on" }, { "good luck with", "good fortune with" },
+    { "good luck in", "good fortune in" }, { "good luck to", "good fortune to" },
+    { "best of luck", "good fortune" },
+  })
+end
+setPhrases("gnome", {
+  { "im ready", "I'm ready and calibrated" }, { "i'm ready", "I'm ready and calibrated" },
+  { "im sorry", "I'm terribly sorry" }, { "i'm sorry", "I'm terribly sorry" },
+  { "heck yeah", "gears and sprockets, yes" }, { "heck yes", "gears and sprockets, yes" },
+  { "real quick", "in a jiffy" }, { "get tired", "start running low on steam" },
+})
+setPhrases("human", {
+  { "im sorry", "forgive me" }, { "i'm sorry", "forgive me" },
+  { "heck yeah", "aye, by the Light" }, { "heck yes", "aye, by the Light" },
+  { "real quick", "with haste" }, { "get tired", "grow weary" },
+})
+setPhrases("dwarf", {
+  { "im sorry", "I'm right sorry" }, { "i'm sorry", "I'm right sorry" },
+  { "heck yeah", "och, aye" }, { "heck yes", "och, aye" }, { "real quick", "quick as ye like" },
+  { "get tired", "get dead on me feet" },
+})
+setPhrases("nightelf", {
+  { "im sorry", "I beg your pardon" }, { "i'm sorry", "I beg your pardon" },
+  { "heck yeah", "indeed, by Elune" }, { "heck yes", "indeed, by Elune" },
+})
+setPhrases("skyborne", {
+  { "im sorry", "I'm sorry, truly" }, { "i'm sorry", "I'm sorry, truly" },
+  { "heck yeah", "by feather and gale, yes" }, { "heck yes", "by feather and gale, yes" },
+  { "get tired", "grow wing-weary" },
+})
+SAME_AS.upstiars = "upstairs"; SAME_AS.upstars = "upstairs"; SAME_AS.downstiars = "downstairs"
+copySame(CORE.words)
+for _, st in pairs(STYLES) do copySame(st.words) end
+
 local ALIAS = { medieval = "human", knight = "human", nelf = "nightelf", elf = "nightelf",
                 kaldorei = "nightelf", nightelves = "nightelf", dwarves = "dwarf", gnomes = "gnome",
                 humans = "human", sky = "skyborne" }
@@ -1625,10 +1675,15 @@ local PROTECT = {
 -- ("no" in "they were no help" stays "no"), and openers that take a comma.
 local START_ONLY = { no = true, nope = true, nah = true, naw = true, nahh = true,
   k = true, kk = true, ok = true, okay = true, alright = true, aight = true }
-local OPENERS = { sry = true, srry = true, soz = true }
+local OPENERS = { sry = true, srry = true, soz = true, sorry = true }
+-- a line that starts with one of these is a question, even without the "?"
+local QUESTION = { how = true, what = true, where = true, why = true, who = true, whos = true,
+  when = true, which = true, is = true, are = true, can = true, could = true, does = true,
+  did = true, would = true, should = true, was = true, were = true, wanna = true }
 
 function R.Transform(text, db, chatType)
   db = db or RPChatDB
+  local opening = (text:match("^%s*([%a']+)") or ""):lower()
   local saved = {}
   local function stash(chunk)
     saved[#saved + 1] = chunk
@@ -1697,11 +1752,14 @@ function R.Transform(text, db, chatType)
   -- emotes read "Name waves.", so their first letter stays lower case
   if db.capitalize and chatType ~= "EMOTE" then
     text = text:gsub("^(%l)", string.upper)
+    -- "*cackles* you still like it" -> "*cackles* You still like it"
+    text = text:gsub("^(%*[^%*]+%*%s+)(%l)", function(a, b) return a .. b:upper() end)
     text = text:gsub("([%.!%?]%s+)(%l)", function(a, b) return a .. b:upper() end)
   end
   if db.punctuate and text:find("%a") and not text:find("[%.!%?%*%)\"']$")
      and not text:find("|[rhtak]$") then
-    text = text .. (chatType == "YELL" and "!" or ".")
+    if QUESTION[opening] then text = text .. "?"
+    else text = text .. (chatType == "YELL" and "!" or ".") end
   end
   return text
 end
