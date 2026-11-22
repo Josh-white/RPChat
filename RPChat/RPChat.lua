@@ -1345,6 +1345,59 @@ for name, bye in pairs(CIAO) do
   end)() }, { "got cha", "understood" } })
 end
 
+-- v0.21: from the Loch Modan run. Oaths that read as one thought, and a few typos.
+for name, s in pairs({
+  human = { yes = "aye, by the Light", no = "by the Light, no", it = "confound it", what = "what in the Light's name" },
+  gnome = { yes = "gears and sprockets, yes", no = "gears and sprockets, no", it = "blast it",
+    what = "what in the name of all gears" },
+  dwarf = { yes = "och, aye", no = "nae chance", it = "och, blast it", what = "what in the Titans' name" },
+  nightelf = { yes = "indeed, by Elune", no = "never, by Elune", it = "curses", what = "what by Elune's light" },
+  skyborne = { yes = "by feather and gale, yes", no = "by feather and gale, no", it = "storms take it",
+    what = "what in the storms" },
+}) do
+  local list = {}
+  for _, a in ipairs({ "hell", "heck" }) do
+    for _, b in ipairs({ "yeah", "yes", "yea", "ya", "yah" }) do list[#list + 1] = { a .. " " .. b, s.yes } end
+    list[#list + 1] = { a .. " no", s.no }; list[#list + 1] = { a .. " nah", s.no }
+    list[#list + 1] = { "what the " .. a, s.what }
+  end
+  for _, d in ipairs({ "damn it", "dammit", "damnit", "dang it", "darn it", "crap it" }) do
+    list[#list + 1] = { d, s.it }
+  end
+  setPhrases(name, list)
+  local st = STYLES[name]
+  if st and st.words.shit == nil then st.words.shit = st.words.crap or st.words.damn end
+end
+for _, name in ipairs({ "gnome", "human", "dwarf", "nightelf", "skyborne" }) do
+  local st = STYLES[name]
+  if st then
+    for _, p in ipairs(st.phrases) do
+      if p[1] == "holy crap" then setPhrase(name, "holy shit", p[2]) break end
+    end
+  end
+end
+-- "well shit okay" -> "Well, blast. Very well."
+for name, w in pairs({ human = { "well, blast", "very well" }, gnome = { "well, drat", "right-o" },
+  dwarf = { "well, och", "aye, fair enough" }, nightelf = { "well, curses", "so be it" },
+  skyborne = { "well, storms take it", "as the wind wills" } }) do
+  local list = {}
+  for _, c in ipairs({ "shit", "damn", "crap", "dang", "heck", "hell" }) do
+    list[#list + 1] = { "well " .. c, w[1] }
+    for _, ok in ipairs({ "okay", "ok", "alright", "fine" }) do
+      list[#list + 1] = { "well " .. c .. " " .. ok, w[1] .. ". " .. w[2] }
+    end
+  end
+  setPhrases(name, list)
+end
+for k, v in pairs({ naye = "nay", alredy = "already", alreday = "already", allready = "already",
+  thoguht = "thought", thougt = "thought", thoght = "thought", thougth = "thought" }) do
+  if CORE.words[k] == nil then CORE.words[k] = v end
+end
+for k, v in pairs({ alredy = "already", alreday = "already", allready = "already", thoguht = "thought",
+  thougt = "thought", thoght = "thought", thougth = "thought" }) do SAME_AS[k] = v end
+copySame(CORE.words)
+for _, st in pairs(STYLES) do copySame(st.words) end
+
 local ALIAS = { medieval = "human", knight = "human", nelf = "nightelf", elf = "nightelf",
                 kaldorei = "nightelf", nightelves = "nightelf", dwarves = "dwarf", gnomes = "gnome",
                 humans = "human", sky = "skyborne" }
@@ -1715,9 +1768,35 @@ local QUESTION = { how = true, what = true, where = true, why = true, who = true
   when = true, which = true, is = true, are = true, can = true, could = true, does = true,
   did = true, would = true, should = true, was = true, were = true, wanna = true }
 
+-- v0.21: "do you need help" is a question too, but "do it" and "have fun" are not
+local QUESTION_IF_WHO = { ["do"] = true, have = true, has = true, will = true, shall = true, am = true,
+  may = true, might = true, dont = true, ["don't"] = true, cant = true, ["can't"] = true, wont = true,
+  ["won't"] = true, isnt = true, ["isn't"] = true, arent = true, ["aren't"] = true, doesnt = true,
+  ["doesn't"] = true, didnt = true, ["didn't"] = true }
+local WHO = { you = true, u = true, ya = true, ye = true, we = true, i = true, they = true, he = true,
+  she = true, anyone = true, anybody = true, someone = true, everyone = true, yall = true, ["y'all"] = true }
+-- v0.21: place names are never rewritten ("the Great Forge" is not "the Splendid Forge"),
+-- typed in any case. Two Capitalised words in a row mid-sentence are treated as a name too.
+local PLACES = { "great forge", "booty bay", "loch modan", "dun modr", "dun morogh", "dun algaz",
+  "deeprun tram", "elwynn forest", "redridge mountains", "menethil harbor", "thandol span",
+  "grim batol", "stonewrought dam", "molten core", "burning steppes", "searing gorge", "blasted lands",
+  "swamp of sorrows", "thousand needles", "dark portal", "scarlet monastery", "shadowfang keep",
+  "ragefire chasm", "wailing caverns", "blackfathom deeps", "razorfen kraul", "razorfen downs",
+  "sunken temple", "dire maul", "blackrock depths", "blackrock spire", "blackrock mountain",
+  "lion's pride inn", "sentinel hill", "darkmoon faire", "trade district", "dwarven district",
+  "mystic ward", "military ward", "hall of explorers", "tinker town", "old town", "cathedral square",
+  "mage quarter", "valley of heroes", "valley of trials", "throne of the tides", "eastern kingdoms",
+  "twilight grove", "the great sea", "stormwind", "ironforge", "darnassus", "deadmines", "stockade",
+  "wetlands", "westfall", "duskwood", "goldshire", "lakeshire", "thelsamar", "kharanos", "gnomeregan",
+  "uldaman", "hinterlands", "badlands", "stranglethorn", "darkshore", "ashenvale", "stonetalon",
+  "teldrassil", "auberdine", "astranaar", "feralas", "tanaris", "silithus", "winterspring",
+  "felwood", "azshara", "desolace", "dustwallow", "southshore", "hillsbrad", "arathi", "alterac" }
+table.sort(PLACES, function(a, b) return #a > #b end)
+
 function R.Transform(text, db, chatType)
   db = db or RPChatDB
   local opening = (text:match("^%s*([%a']+)") or ""):lower()
+  local second = (text:match("^%s*[%a']+%s+([%a']+)") or ""):lower()
   local saidWhatA = text:lower():find("^%s*what%s+an?%s") ~= nil   -- "what a fight" is no question
   local saved = {}
   local function stash(chunk)
@@ -1726,6 +1805,11 @@ function R.Transform(text, db, chatType)
   end
   for _, pat in ipairs(PROTECT) do
     text = text:gsub(pat, stash)
+  end
+  for _, place in ipairs(PLACES) do
+    if text:lower():find(place, 1, true) then
+      text = text:gsub("%f[%w']" .. ciPattern(place) .. "%f[^%w']", stash)
+    end
   end
 
   -- phrases (user phrases with spaces count too)
@@ -1759,6 +1843,19 @@ function R.Transform(text, db, chatType)
   text = text:gsub("()%f[%w']([%w']+)%f[^%w']()", function(pos, word, after)
     local key = word:lower()
     local first = START_ONLY[key] or OPENERS[key]
+    -- "The Great Forge", "Booty Bay": a Capitalised word beside another mid-sentence is a name
+    if word:find("^%u%l") then
+      local before = text:sub(1, pos - 1)
+      local midSentence = before:find("%S") and not before:find("[%.!%?]%s*$") and not before:find("^%s*%*[^%*]*%*%s*$")
+      if midSentence then
+        local nextWord = text:sub(after):match("^%s+([%w']+)")
+        local prevWord = before:match("([%w']+)%s+$")
+        local prevMid = prevWord and before:sub(1, #before - #(before:match("[%w']+%s+$"))):find("%S")
+        if (nextWord and nextWord:find("^%u%l")) or (prevWord and prevWord:find("^%u%l") and prevMid) then
+          return nil
+        end
+      end
+    end
     local atStart, more
     if first then
       local before = text:sub(1, pos - 1)
@@ -1814,7 +1911,7 @@ function R.Transform(text, db, chatType)
      and not text:find("|[rhtak]$") then
     local exclaim = opening == "what" and saidWhatA
     if exclaim then text = text .. "!"
-    elseif QUESTION[opening] then text = text .. "?"
+    elseif QUESTION[opening] or (QUESTION_IF_WHO[opening] and WHO[second]) then text = text .. "?"
     else text = text .. (chatType == "YELL" and "!" or ".") end
   end
   return text
