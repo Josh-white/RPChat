@@ -1398,6 +1398,54 @@ for k, v in pairs({ alredy = "already", alreday = "already", allready = "already
 copySame(CORE.words)
 for _, st in pairs(STYLES) do copySame(st.words) end
 
+-- v0.22: from the 2026-11-22 laptop capture
+-- "tired" has to work as a plain adjective: "getting tired", "hey there tired man"
+STYLES.gnome.words.tired = "wound down"; STYLES.gnome.words.sleepy = "wound down"
+STYLES.dwarf.words.tired = "knackered"
+setPhrases("gnome", { { "get tired", "start winding down" }, { "drop rate", "drop odds" },
+  { "i think", { "I reckon", "I calculate" } }, { "working on", "tinkering away at" } })
+setPhrases("dwarf", { { "get tired", "get knackered" } })
+-- "okay so ..." is a sentence start, not an answer
+for name, w in pairs({ human = "well then, so", gnome = "right, so", dwarf = "right then, so",
+  nightelf = "very well, so", skyborne = "alright, so" }) do
+  setPhrases(name, { { "okay so", w }, { "ok so", w }, { "alright so", w } })
+end
+-- "thank you friend" -> "My gratitude, old sprocket" (with the comma)
+local function styleWord(st, key)
+  local v = st.words[key]
+  if v == nil and st.base and STYLES[st.base] then v = STYLES[st.base].words[key] end
+  return v
+end
+local function stylePhrase(st, key)
+  for _, p in ipairs(st.phrases) do if p[1] == key then return p[2] end end
+  local b = st.base and STYLES[st.base]
+  if b then for _, p in ipairs(b.phrases) do if p[1] == key then return p[2] end end end
+end
+local function asList(v) if type(v) == "table" then return v elseif v then return { v } end return {} end
+for _, name in ipairs({ "gnome", "human", "dwarf", "nightelf", "skyborne" }) do
+  local st = STYLES[name]
+  local thanks = asList(stylePhrase(st, "thank you"))
+  if st and #thanks > 0 then
+    local list = {}
+    for _, who in ipairs({ "friend", "bro", "buddy", "dude", "man", "mate", "pal", "guys", "friends" }) do
+      local reps = {}
+      for _, t in ipairs(thanks) do
+        local f = asList(styleWord(st, who))
+        local fw = f[1] or who
+        if not t:find("^%*") then reps[#reps + 1] = t .. ", " .. fw end
+      end
+      if #reps > 0 then
+        for _, th in ipairs({ "thank you", "thanks", "thx", "ty" }) do list[#list + 1] = { th .. " " .. who, reps } end
+      end
+    end
+    setPhrases(name, list)
+  end
+end
+for k, v in pairs({ finsihed = "finished", finshed = "finished", finised = "finished", finsih = "finish",
+  evertually = "eventually", eventualy = "eventually", evntually = "eventually", talan = "talon" }) do
+  if CORE.words[k] == nil then CORE.words[k] = v end
+end
+
 local ALIAS = { medieval = "human", knight = "human", nelf = "nightelf", elf = "nightelf",
                 kaldorei = "nightelf", nightelves = "nightelf", dwarves = "dwarf", gnomes = "gnome",
                 humans = "human", sky = "skyborne" }
@@ -1775,6 +1823,11 @@ local QUESTION_IF_WHO = { ["do"] = true, have = true, has = true, will = true, s
   ["doesn't"] = true, didnt = true, ["didn't"] = true }
 local WHO = { you = true, u = true, ya = true, ye = true, we = true, i = true, they = true, he = true,
   she = true, anyone = true, anybody = true, someone = true, everyone = true, yall = true, ["y'all"] = true }
+local ITS_IS = { super = true, so = true, ["not"] = true, ok = true, okay = true, fine = true, all = true,
+  just = true, really = true, still = true, too = true, very = true, getting = true, gonna = true,
+  ["in"] = true, on = true, over = true, up = true, here = true, there = true, late = true, fun = true,
+  hard = true, easy = true, kinda = true, pretty = true, only = true, always = true, never = true,
+  been = true, almost = true, like = true, about = true, worth = true, cool = true, weird = true }
 -- v0.21: place names are never rewritten ("the Great Forge" is not "the Splendid Forge"),
 -- typed in any case. Two Capitalised words in a row mid-sentence are treated as a name too.
 local PLACES = { "great forge", "booty bay", "loch modan", "dun modr", "dun morogh", "dun algaz",
@@ -1789,7 +1842,7 @@ local PLACES = { "great forge", "booty bay", "loch modan", "dun modr", "dun moro
   "twilight grove", "the great sea", "stormwind", "ironforge", "darnassus", "deadmines", "stockade",
   "wetlands", "westfall", "duskwood", "goldshire", "lakeshire", "thelsamar", "kharanos", "gnomeregan",
   "uldaman", "hinterlands", "badlands", "stranglethorn", "darkshore", "ashenvale", "stonetalon",
-  "teldrassil", "auberdine", "astranaar", "feralas", "tanaris", "silithus", "winterspring",
+  "teldrassil", "stone talon", "auberdine", "astranaar", "feralas", "tanaris", "silithus", "winterspring",
   "felwood", "azshara", "desolace", "dustwallow", "southshore", "hillsbrad", "arathi", "alterac" }
 table.sort(PLACES, function(a, b) return #a > #b end)
 
@@ -1808,7 +1861,17 @@ function R.Transform(text, db, chatType)
   end
   for _, place in ipairs(PLACES) do
     if text:lower():find(place, 1, true) then
-      text = text:gsub("%f[%w']" .. ciPattern(place) .. "%f[^%w']", stash)
+      text = text:gsub("%f[%w']" .. ciPattern(place) .. "%f[^%w']", function(m)
+        -- "booty bay" -> "Booty Bay"; anything typed with capitals stays as typed
+        if m == m:lower() then
+          m = m:gsub("(%a)([%w']*)", function(a, b)
+            if b == "of" or (a == "o" and b == "f") then return a .. b end
+            return a:upper() .. b
+          end)
+          m = m:gsub("^The ", "the "):gsub(" Of ", " of "):gsub(" The ", " the ")
+        end
+        return stash(m)
+      end)
     end
   end
 
@@ -1868,6 +1931,11 @@ function R.Transform(text, db, chatType)
     if PLACE_ONLY[key] and word ~= word:upper() then
       local prev = text:sub(1, pos - 1):match("([%a']+)%s*$")
       if not (prev and PLACE_BEFORE[prev:lower()]) then return nil end
+    end
+    -- "its super long" -> "it's super long"; "its turn" keeps "its"
+    if key == "its" then
+      local nextWord = text:sub(after):match("^%s+([%w']+)")
+      if nextWord and ITS_IS[nextWord:lower()] then return matchCase(word, "it's") end
     end
     local rep
     if NICE_ADJ[key] and db.custom[key] == nil and fileWords[key] == nil and not db.removed[key] then

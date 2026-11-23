@@ -2,7 +2,7 @@
 ## Title: RPChat
 ## Notes: Turns your typed chat into role-play speech. Type /rp for options.
 ## Author: JJ
-## Version: 0.21.0
+## Version: 0.22.0
 ## SavedVariables: RPChatDB, RPChatLog
 ## SavedVariablesPerCharacter: RPChatCharDB
 
