@@ -1400,10 +1400,10 @@ for _, st in pairs(STYLES) do copySame(st.words) end
 
 -- v0.22: from the 2026-11-22 laptop capture
 -- "tired" has to work as a plain adjective: "getting tired", "hey there tired man"
-STYLES.gnome.words.tired = "wound down"; STYLES.gnome.words.sleepy = "wound down"
+STYLES.gnome.words.tired = "weary"; STYLES.gnome.words.sleepy = "weary"
 STYLES.dwarf.words.tired = "knackered"
 setPhrases("gnome", { { "get tired", "start winding down" }, { "drop rate", "drop odds" },
-  { "i think", { "I reckon", "I calculate" } }, { "working on", "tinkering away at" } })
+  { "getting tired", "winding down" }, { "i think", "I reckon" }, { "working on", "tinkering away at" } })
 setPhrases("dwarf", { { "get tired", "get knackered" } })
 -- "okay so ..." is a sentence start, not an answer
 for name, w in pairs({ human = "well then, so", gnome = "right, so", dwarf = "right then, so",
@@ -1432,7 +1432,11 @@ for _, name in ipairs({ "gnome", "human", "dwarf", "nightelf", "skyborne" }) do
       for _, t in ipairs(thanks) do
         local f = asList(styleWord(st, who))
         local fw = f[1] or who
-        if not t:find("^%*") then reps[#reps + 1] = t .. ", " .. fw end
+        -- dwarf "cheers, lad" already names them: no "cheers, lad, lad"
+        local last = (t:match("([%a']+)$") or ""):lower()
+        local named = last == fw:lower() or last == "lad" or last == "lass" or last == "friend" or last == "chum"
+        for _, x in ipairs(f) do if last == x:lower() then named = true end end
+        if not t:find("^%*") then reps[#reps + 1] = named and t or (t .. ", " .. fw) end
       end
       if #reps > 0 then
         for _, th in ipairs({ "thank you", "thanks", "thx", "ty" }) do list[#list + 1] = { th .. " " .. who, reps } end
@@ -1444,6 +1448,21 @@ end
 for k, v in pairs({ finsihed = "finished", finshed = "finished", finised = "finished", finsih = "finish",
   evertually = "eventually", eventualy = "eventually", evntually = "eventually", talan = "talon" }) do
   if CORE.words[k] == nil then CORE.words[k] = v end
+end
+
+-- v0.23: "thank you kind sir" keeps the sir and drops the "lad"
+for name, t in pairs({ human = "my thanks", gnome = "many thanks", dwarf = "cheers",
+  nightelf = "I am grateful", skyborne = "my thanks" }) do
+  local list = {}
+  for _, th in ipairs({ "thank you", "thanks", "ty", "thx" }) do
+    for _, who in ipairs({ "kind sir", "good sir", "sir", "kind lady", "my lady", "lady", "ma'am", "maam",
+      "madam", "miss" }) do
+      local out = who
+      if who == "maam" then out = "ma'am" end
+      list[#list + 1] = { th .. " " .. who, t .. ", " .. out }
+    end
+  end
+  setPhrases(name, list)
 end
 
 local ALIAS = { medieval = "human", knight = "human", nelf = "nightelf", elf = "nightelf",
@@ -1821,6 +1840,10 @@ local QUESTION_IF_WHO = { ["do"] = true, have = true, has = true, will = true, s
   may = true, might = true, dont = true, ["don't"] = true, cant = true, ["can't"] = true, wont = true,
   ["won't"] = true, isnt = true, ["isn't"] = true, arent = true, ["aren't"] = true, doesnt = true,
   ["doesn't"] = true, didnt = true, ["didn't"] = true }
+-- "care to group?", "want to duel?", "anyone up for stocks?"
+local QUESTION_IF_TO = { care = true, want = true, wanna = true }
+local QUESTION_ALWAYS = { anyone = true, anybody = true }
+local WANT_NEXT = { to = true, some = true, any = true, a = true, an = true, me = true, this = true, that = true }
 local WHO = { you = true, u = true, ya = true, ye = true, we = true, i = true, they = true, he = true,
   she = true, anyone = true, anybody = true, someone = true, everyone = true, yall = true, ["y'all"] = true }
 local ITS_IS = { super = true, so = true, ["not"] = true, ok = true, okay = true, fine = true, all = true,
@@ -1842,9 +1865,14 @@ local PLACES = { "great forge", "booty bay", "loch modan", "dun modr", "dun moro
   "twilight grove", "the great sea", "stormwind", "ironforge", "darnassus", "deadmines", "stockade",
   "wetlands", "westfall", "duskwood", "goldshire", "lakeshire", "thelsamar", "kharanos", "gnomeregan",
   "uldaman", "hinterlands", "badlands", "stranglethorn", "darkshore", "ashenvale", "stonetalon",
-  "teldrassil", "stone talon", "auberdine", "astranaar", "feralas", "tanaris", "silithus", "winterspring",
+  "teldrassil", "auberdine", "astranaar", "feralas", "tanaris", "silithus", "winterspring",
   "felwood", "azshara", "desolace", "dustwallow", "southshore", "hillsbrad", "arathi", "alterac" }
 table.sort(PLACES, function(a, b) return #a > #b end)
+-- v0.23: places people often type as two words or misspell
+local PLACE_FIX = { { "stone talan", "Stonetalon" }, { "stone talon", "Stonetalon" },
+  { "stonetalan", "Stonetalon" }, { "loch modon", "Loch Modan" }, { "iron forge", "Ironforge" },
+  { "storm wind", "Stormwind" }, { "wet lands", "Wetlands" }, { "dun morough", "Dun Morogh" },
+  { "dun moroh", "Dun Morogh" }, { "darnasus", "Darnassus" }, { "gnomergan", "Gnomeregan" } }
 
 function R.Transform(text, db, chatType)
   db = db or RPChatDB
@@ -1858,6 +1886,11 @@ function R.Transform(text, db, chatType)
   end
   for _, pat in ipairs(PROTECT) do
     text = text:gsub(pat, stash)
+  end
+  for _, fix in ipairs(PLACE_FIX) do
+    if text:lower():find(fix[1], 1, true) then
+      text = text:gsub("%f[%w']" .. ciPattern(fix[1]) .. "%f[^%w']", function() return stash(fix[2]) end)
+    end
   end
   for _, place in ipairs(PLACES) do
     if text:lower():find(place, 1, true) then
@@ -1979,7 +2012,8 @@ function R.Transform(text, db, chatType)
      and not text:find("|[rhtak]$") then
     local exclaim = opening == "what" and saidWhatA
     if exclaim then text = text .. "!"
-    elseif QUESTION[opening] or (QUESTION_IF_WHO[opening] and WHO[second]) then text = text .. "?"
+    elseif QUESTION[opening] or (QUESTION_IF_WHO[opening] and WHO[second]) or QUESTION_ALWAYS[opening]
+      or (QUESTION_IF_TO[opening] and WANT_NEXT[second]) then text = text .. "?"
     else text = text .. (chatType == "YELL" and "!" or ".") end
   end
   return text
