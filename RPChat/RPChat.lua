@@ -1436,7 +1436,7 @@ for _, name in ipairs({ "gnome", "human", "dwarf", "nightelf", "skyborne" }) do
         local last = (t:match("([%a']+)$") or ""):lower()
         local named = last == fw:lower() or last == "lad" or last == "lass" or last == "friend" or last == "chum"
         for _, x in ipairs(f) do if last == x:lower() then named = true end end
-        if not t:find("^%*") then reps[#reps + 1] = named and t or (t .. ", " .. fw) end
+        if not t:find("^%*") then reps[#reps + 1] = (named and t or (t .. ", " .. fw)) .. "\003" end
       end
       if #reps > 0 then
         for _, th in ipairs({ "thank you", "thanks", "thx", "ty" }) do list[#list + 1] = { th .. " " .. who, reps } end
@@ -1459,8 +1459,18 @@ for name, t in pairs({ human = "my thanks", gnome = "many thanks", dwarf = "chee
       "madam", "miss" }) do
       local out = who
       if who == "maam" then out = "ma'am" end
-      list[#list + 1] = { th .. " " .. who, t .. ", " .. out }
+      list[#list + 1] = { th .. " " .. who, t .. ", " .. out .. "\003" }
     end
+  end
+  setPhrases(name, list)
+end
+
+-- v0.24: "better then engineering" -> "better than engineering"
+for _, name in ipairs({ "gnome", "human", "dwarf", "nightelf", "skyborne" }) do
+  local list = {}
+  for _, w in ipairs({ "better", "worse", "more", "less", "rather", "faster", "slower", "bigger",
+    "smaller", "higher", "lower", "older", "younger", "easier", "harder", "stronger", "other" }) do
+    list[#list + 1] = { w .. " then", w .. " than" }
   end
   setPhrases(name, list)
 end
@@ -1841,6 +1851,16 @@ local QUESTION_IF_WHO = { ["do"] = true, have = true, has = true, will = true, s
   ["won't"] = true, isnt = true, ["isn't"] = true, arent = true, ["aren't"] = true, doesnt = true,
   ["doesn't"] = true, didnt = true, ["didn't"] = true }
 -- "care to group?", "want to duel?", "anyone up for stocks?"
+-- v0.24: "hey team how goes the evening" asks a question after the greeting
+local QUESTION_ANYWHERE = { "how goes", "how are you", "how are ya", "how are u", "how r u", "how's it",
+  "hows it", "how is it", "how have you", "how was your", "how was the", "how you doing", "how ya doing",
+  "what's up", "whats up", "wanna group", "want to group", "you there", "you around" }
+-- v0.24: capitalised short forms for places ("fly to IF") are only expanded in capitals
+local CAPS_PLACE = { IF = "Ironforge", SW = "Stormwind", BB = "Booty Bay", SFK = "Shadowfang Keep",
+  RFC = "Ragefire Chasm", WC = "Wailing Caverns", BFD = "Blackfathom Deeps", SM = "Scarlet Monastery",
+  STV = "Stranglethorn Vale", RFK = "Razorfen Kraul", RFD = "Razorfen Downs", ZF = "Zul'Farrak",
+  BRD = "Blackrock Depths", UBRS = "Upper Blackrock Spire", LBRS = "Lower Blackrock Spire",
+  ST = "the Sunken Temple", ULD = "Uldaman", GNOMER = "Gnomeregan" }
 local QUESTION_IF_TO = { care = true, want = true, wanna = true }
 local QUESTION_ALWAYS = { anyone = true, anybody = true }
 local WANT_NEXT = { to = true, some = true, any = true, a = true, an = true, me = true, this = true, that = true }
@@ -1878,6 +1898,13 @@ function R.Transform(text, db, chatType)
   db = db or RPChatDB
   local opening = (text:match("^%s*([%a']+)") or ""):lower()
   local second = (text:match("^%s*[%a']+%s+([%a']+)") or ""):lower()
+  local askedAnywhere = false
+  do
+    local low = " " .. text:lower():gsub("[^%w' ]", " ") .. " "
+    for _, q in ipairs(QUESTION_ANYWHERE) do
+      if low:find(" " .. q .. " ", 1, true) then askedAnywhere = true break end
+    end
+  end
   local saidWhatA = text:lower():find("^%s*what%s+an?%s") ~= nil   -- "what a fight" is no question
   local saved = {}
   local function stash(chunk)
@@ -1886,6 +1913,17 @@ function R.Transform(text, db, chatType)
   end
   for _, pat in ipairs(PROTECT) do
     text = text:gsub(pat, stash)
+  end
+  -- caps lock is not shouting outside /yell: "BRB GETTING BEER" reads as "brb getting beer"
+  local allCaps = chatType ~= "YELL" and text:find("%a") and text == text:upper()
+    and #(text:gsub("[^%a]", "")) > 1
+  if allCaps then
+    -- "SELLING ON AH" keeps its AH; "SFK" stays a dungeon
+    text = text:gsub("[%a']+", function(w)
+      if PLACE_ONLY[w:lower()] or (CAPS_PLACE[w] and w ~= "IF") then return w end
+      return w:lower()
+    end)
+    if opening ~= "" then opening = opening:lower() end
   end
   for _, fix in ipairs(PLACE_FIX) do
     if text:lower():find(fix[1], 1, true) then
@@ -1938,6 +1976,7 @@ function R.Transform(text, db, chatType)
   -- single words
   text = text:gsub("()%f[%w']([%w']+)%f[^%w']()", function(pos, word, after)
     local key = word:lower()
+    if CAPS_PLACE[word] then return CAPS_PLACE[word] end
     local first = START_ONLY[key] or OPENERS[key]
     -- "The Great Forge", "Booty Bay": a Capitalised word beside another mid-sentence is a name
     if word:find("^%u%l") then
@@ -1998,6 +2037,8 @@ function R.Transform(text, db, chatType)
   text = text:gsub("%f[%w']i%f[^%w']", "I")
   -- restore links and phrases
   text = text:gsub("\001(%d+)\002", function(n) return saved[tonumber(n)] end)
+  -- "thanks friend warmest I've ever been" -> "Much obliged, lad, warmest I've ever been"
+  text = text:gsub("\003(%s+)([%w\"'])", ",%1%2"):gsub("\003", "")
   -- a line that ends on "brb," loses the comma
   text = text:gsub(",+%s*$", "")
 
@@ -2013,6 +2054,7 @@ function R.Transform(text, db, chatType)
     local exclaim = opening == "what" and saidWhatA
     if exclaim then text = text .. "!"
     elseif QUESTION[opening] or (QUESTION_IF_WHO[opening] and WHO[second]) or QUESTION_ALWAYS[opening]
+      or askedAnywhere
       or (QUESTION_IF_TO[opening] and WANT_NEXT[second]) then text = text .. "?"
     else text = text .. (chatType == "YELL" and "!" or ".") end
   end
