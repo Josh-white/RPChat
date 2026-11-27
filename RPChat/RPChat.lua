@@ -1475,6 +1475,23 @@ for _, name in ipairs({ "gnome", "human", "dwarf", "nightelf", "skyborne" }) do
   setPhrases(name, list)
 end
 
+-- v0.25: from a human paladin's /rp share
+for name, w in pairs({
+  human = { "aye, if you would", "aye, sir", "aye, my lady" },
+  gnome = { "affirmative, if you please", "affirmative, sir", "affirmative, ma'am" },
+  dwarf = { "aye, if ye would", "aye, sir", "aye, lass" },
+  nightelf = { "yes, if you would", "as you say, sir", "as you say, my lady" },
+  skyborne = { "aye, if you please", "aye, sir", "aye, ma'am" } }) do
+  setPhrases(name, { { "yes please", w[1] }, { "yes pls", w[1] }, { "yes plz", w[1] },
+    { "yes sir", w[2] }, { "yes maam", w[3] }, { "yes ma'am", w[3] }, { "drop rate", "drop odds" },
+    { "omw to", "on my way to" }, { "otw to", "on my way to" } })
+end
+STYLES.human.words.bug = "hex"; STYLES.human.words.bugs = "hexes"; STYLES.human.words.bugged = "bewitched"
+for k, v in pairs({ similiar = "similar", monrning = "morning", assignement = "assignment", poiont = "point",
+  stealling = "stealing", regeant = "reagent", drope = "drop", relm = "realm", finaly = "finally" }) do
+  if CORE.words[k] == nil then CORE.words[k] = v end
+end
+
 local ALIAS = { medieval = "human", knight = "human", nelf = "nightelf", elf = "nightelf",
                 kaldorei = "nightelf", nightelves = "nightelf", dwarves = "dwarf", gnomes = "gnome",
                 humans = "human", sky = "skyborne" }
@@ -1861,6 +1878,15 @@ local CAPS_PLACE = { IF = "Ironforge", SW = "Stormwind", BB = "Booty Bay", SFK =
   STV = "Stranglethorn Vale", RFK = "Razorfen Kraul", RFD = "Razorfen Downs", ZF = "Zul'Farrak",
   BRD = "Blackrock Depths", UBRS = "Upper Blackrock Spire", LBRS = "Lower Blackrock Spire",
   ST = "the Sunken Temple", ULD = "Uldaman", GNOMER = "Gnomeregan" }
+-- v0.25: oaths only swap when said as an oath ("Damn!", "oh shit", "damn it all")
+local CURSE_WORD = { damn = true, shit = true, crap = true, dang = true, darn = true, dammit = true }
+local CURSE_LEAD = { oh = true, well = true, aw = true, aww = true, ah = true, ugh = true, man = true, holy = true }
+local CURSE_NEXT = { that = true, this = true, it = true, i = true, we = true, you = true, he = true,
+  she = true, they = true, im = true, ["i'm"] = true, thats = true, ["that's"] = true, man = false }
+local ADJ_CURSE = { damn = true, dang = true, darn = true }
+local ARTICLE = {}
+local CURSE_ADJ = { human = "cursed", gnome = "blasted", dwarf = "blasted", nightelf = "wretched",
+  skyborne = "blasted" }
 local QUESTION_IF_TO = { care = true, want = true, wanna = true }
 local QUESTION_ALWAYS = { anyone = true, anybody = true }
 local WANT_NEXT = { to = true, some = true, any = true, a = true, an = true, me = true, this = true, that = true }
@@ -1892,20 +1918,22 @@ table.sort(PLACES, function(a, b) return #a > #b end)
 local PLACE_FIX = { { "stone talan", "Stonetalon" }, { "stone talon", "Stonetalon" },
   { "stonetalan", "Stonetalon" }, { "loch modon", "Loch Modan" }, { "iron forge", "Ironforge" },
   { "storm wind", "Stormwind" }, { "wet lands", "Wetlands" }, { "dun morough", "Dun Morogh" },
-  { "dun moroh", "Dun Morogh" }, { "darnasus", "Darnassus" }, { "gnomergan", "Gnomeregan" } }
+  { "dun moroh", "Dun Morogh" }, { "darnasus", "Darnassus" }, { "stormind", "Stormwind" }, { "stromwind", "Stormwind" }, { "gnomergan", "Gnomeregan" } }
 
 function R.Transform(text, db, chatType)
   db = db or RPChatDB
-  local opening = (text:match("^%s*([%a']+)") or ""):lower()
-  local second = (text:match("^%s*[%a']+%s+([%a']+)") or ""):lower()
+  -- v0.25: the end punctuation belongs to the last sentence ("Is it worth it? That is 58 silver.")
+  local lastSentence = text:match("^.*[%.!%?]%s+(%S.*)$") or text
+  local opening = (lastSentence:match("^%s*([%a']+)") or ""):lower()
+  local second = (lastSentence:match("^%s*[%a']+%s+([%a']+)") or ""):lower()
   local askedAnywhere = false
   do
-    local low = " " .. text:lower():gsub("[^%w' ]", " ") .. " "
+    local low = " " .. lastSentence:lower():gsub("[^%w' ]", " ") .. " "
     for _, q in ipairs(QUESTION_ANYWHERE) do
       if low:find(" " .. q .. " ", 1, true) then askedAnywhere = true break end
     end
   end
-  local saidWhatA = text:lower():find("^%s*what%s+an?%s") ~= nil   -- "what a fight" is no question
+  local saidWhatA = lastSentence:lower():find("^%s*what%s+an?%s") ~= nil   -- "what a fight" is no question
   local saved = {}
   local function stash(chunk)
     saved[#saved + 1] = chunk
@@ -1976,6 +2004,33 @@ function R.Transform(text, db, chatType)
   -- single words
   text = text:gsub("()%f[%w']([%w']+)%f[^%w']()", function(pos, word, after)
     local key = word:lower()
+    if CURSE_WORD[key] and db.custom[key] == nil and fileWords[key] == nil then
+      local before = text:sub(1, pos - 1)
+      local rest = text:sub(after)
+      local prev = before:match("([%a']+)%s*$")
+      local startOk = before:find("^%s*$") or before:find("[%.!%?,;:%*]%s*$")
+        or (prev and CURSE_LEAD[prev:lower()] and (before:sub(1, #before - #before:match("[%a']+%s*$"))):find("^%s*$"))
+      local endOk = rest:find("^%s*$") or rest:find("^%s*[%.!%?,;:]") or rest:find("^%s+it%f[%A]")
+        or rest:find("^%s+all%f[%A]")
+      -- "damn that was close" -> "Blast, that was a near thing"
+      local nx = rest:match("^%s+([%a']+)")
+      local opener = startOk and not endOk and ((nx and CURSE_NEXT[nx:lower()]) or rest:find("^%s+\001"))
+      if opener then
+        local r = pick(key, lookup(db, key))
+        if r and r:find("[%w']$") then return matchCase(word, r) .. "," end
+      end
+      if not (startOk and endOk) then
+        if ADJ_CURSE[key] and rest:find("^%s+[%a]") and not (prev and ARTICLE[prev:lower()] == nil and false) then
+          local st = STYLES[db.style] or STYLES.gnome
+          local adj = CURSE_ADJ[db.style] or CURSE_ADJ[st.base or ""] or "cursed"
+          return matchCase(word, adj)
+        end
+        return nil
+      end
+    end
+    -- "Ok. TY" -> "As you say. My thanks." Short capitals are an abbreviation, not shouting
+    local abbrev = chatType ~= "YELL" and #word <= 4 and word == word:upper() and word:find("%a%a")
+      and not PLACE_ONLY[key] and not CAPS_PLACE[word]
     if word == "IF" or (allCaps and key == "if") then
       -- "fly to IF" is Ironforge; "what IF it works" is just "if"
       local prev = text:sub(1, pos - 1):match("([%a']+)%s*$")
@@ -2008,6 +2063,10 @@ function R.Transform(text, db, chatType)
       if START_ONLY[key] and not atStart and (more or before:find("%w")) then return nil end
     end
     -- "ah, you did it" stays "Ah"; "AH" or "the ah" is the auction house
+    -- 'I'm trying to say "AH"' means the word itself
+    if PLACE_ONLY[key] and (text:sub(pos - 1, pos - 1):find("[\"%*']") or text:sub(after, after):find("[\"%*]")) then
+      return nil
+    end
     if PLACE_ONLY[key] and word ~= word:upper() then
       local prev = text:sub(1, pos - 1):match("([%a']+)%s*$")
       if not (prev and PLACE_BEFORE[prev:lower()]) then return nil end
@@ -2028,11 +2087,11 @@ function R.Transform(text, db, chatType)
     end
     rep = rep or pick(key, lookup(db, key))
     if not rep then return nil end
-    if PLACE_ONLY[key] and word == word:upper() then
+    if PLACE_ONLY[key] then
       -- "AH" is an abbreviation, not shouting: "Auction House"
       rep = rep:gsub("(%a)(%a*)", function(a, b) return a:upper() .. b end)
     else
-      rep = matchCase(word, rep)
+      rep = matchCase(abbrev and key or word, rep)
     end
     -- "sry tank is drinking" -> "Terribly sorry, bulwark is recharging", "nope not today" -> "Negative, not today"
     if first and atStart and more and rep:find("[%w']$") then rep = rep .. "," end
@@ -2047,6 +2106,13 @@ function R.Transform(text, db, chatType)
   text = text:gsub("\001(%d+)\002", function(n) return saved[tonumber(n)] end)
   -- "thanks friend warmest I've ever been" -> "Much obliged, lad, warmest I've ever been"
   text = text:gsub("\003(%s+)([%w\"'])", ",%1%2"):gsub("\003", "")
+  -- "a arduous one" -> "an arduous one" (not "an one", "an unicorn")
+  text = text:gsub("%f[%w]([Aa]) ([AEIOUaeiou][%w']*)", function(a, w)
+    local l = w:lower()
+    if l:find("^one") or l:find("^uni") or l:find("^use") or l:find("^usu") or l:find("^eu")
+       or l:find("^ur") or l:find("^uk") or l == "u" then return nil end
+    return a .. "n " .. w
+  end)
   -- a line that ends on "brb," loses the comma
   text = text:gsub(",+%s*$", "")
 
