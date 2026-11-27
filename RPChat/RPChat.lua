@@ -1976,7 +1976,15 @@ function R.Transform(text, db, chatType)
   -- single words
   text = text:gsub("()%f[%w']([%w']+)%f[^%w']()", function(pos, word, after)
     local key = word:lower()
-    if CAPS_PLACE[word] then return CAPS_PLACE[word] end
+    if word == "IF" or (allCaps and key == "if") then
+      -- "fly to IF" is Ironforge; "what IF it works" is just "if"
+      local prev = text:sub(1, pos - 1):match("([%a']+)%s*$")
+      local alone = text:sub(1, pos - 1):find("^%s*$") and text:sub(after):find("^%s*$")
+      if alone or (prev and PLACE_BEFORE[prev:lower()]) then
+        return chatType == "YELL" and "IRONFORGE" or "Ironforge"
+      end
+      if word == "IF" then return nil end
+    elseif CAPS_PLACE[word] then return CAPS_PLACE[word] end
     local first = START_ONLY[key] or OPENERS[key]
     -- "The Great Forge", "Booty Bay": a Capitalised word beside another mid-sentence is a name
     if word:find("^%u%l") then
